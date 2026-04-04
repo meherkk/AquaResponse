@@ -1,0 +1,388 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AquaResponse — Fire Hazard &amp; Lakes</title>
+
+  <!-- Leaflet -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: #0f1117;
+      color: #e2e8f0;
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    header {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 12px 20px;
+      background: #1a1d2e;
+      border-bottom: 1px solid #2d3148;
+      flex-shrink: 0;
+      z-index: 1000;
+    }
+
+    header h1 {
+      font-size: 1.1rem;
+      font-weight: 600;
+      color: #f1f5f9;
+      letter-spacing: 0.3px;
+    }
+
+    header .badge {
+      font-size: 0.7rem;
+      background: #2563eb22;
+      color: #60a5fa;
+      border: 1px solid #2563eb44;
+      padding: 2px 8px;
+      border-radius: 999px;
+      font-weight: 500;
+    }
+
+    header .subtitle {
+      font-size: 0.8rem;
+      color: #64748b;
+      margin-left: auto;
+    }
+
+    #map {
+      flex: 1;
+      width: 100%;
+    }
+
+    /* Leaflet popup override */
+    .leaflet-popup-content-wrapper {
+      background: #1e2235;
+      border: 1px solid #2d3148;
+      border-radius: 8px;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+      color: #e2e8f0;
+    }
+
+    .leaflet-popup-tip {
+      background: #1e2235;
+    }
+
+    .leaflet-popup-content {
+      margin: 14px 16px;
+      font-size: 0.85rem;
+      line-height: 1.6;
+    }
+
+    .popup-title {
+      font-weight: 600;
+      font-size: 0.95rem;
+      margin-bottom: 8px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .popup-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      display: inline-block;
+      flex-shrink: 0;
+    }
+
+    .popup-row {
+      display: flex;
+      justify-content: space-between;
+      gap: 16px;
+      color: #94a3b8;
+    }
+
+    .popup-row span:last-child {
+      color: #cbd5e1;
+      font-weight: 500;
+    }
+
+    /* Legend */
+    .legend {
+      background: #1a1d2e;
+      border: 1px solid #2d3148;
+      border-radius: 8px;
+      padding: 14px 16px;
+      min-width: 190px;
+      font-size: 0.82rem;
+    }
+
+    .legend h3 {
+      font-size: 0.78rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+      color: #64748b;
+      margin-bottom: 10px;
+    }
+
+    .legend-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 7px;
+      color: #cbd5e1;
+    }
+
+    .legend-swatch {
+      width: 14px;
+      height: 14px;
+      border-radius: 3px;
+      flex-shrink: 0;
+      opacity: 0.85;
+    }
+
+    .legend-divider {
+      border: none;
+      border-top: 1px solid #2d3148;
+      margin: 10px 0;
+    }
+
+    .legend-stat {
+      display: flex;
+      justify-content: space-between;
+      color: #64748b;
+      font-size: 0.78rem;
+      margin-top: 4px;
+    }
+
+    .legend-stat span:last-child {
+      color: #94a3b8;
+    }
+
+    /* Loading overlay */
+    #loading {
+      position: absolute;
+      inset: 0;
+      background: #0f1117cc;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      z-index: 2000;
+      gap: 12px;
+    }
+
+    .spinner {
+      width: 36px;
+      height: 36px;
+      border: 3px solid #2d3148;
+      border-top-color: #ef4444;
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+    }
+
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    #loading p {
+      font-size: 0.85rem;
+      color: #64748b;
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#ef4444" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M8.5 14.5A2.5 2.5 0 0011 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 01-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 002.5 2.5z"/>
+  </svg>
+  <h1>AquaResponse — Fire Hazard &amp; Lakes</h1>
+  <span class="badge">SRA · California</span>
+  <span class="subtitle">CAL FIRE · CA Dept. of Fish &amp; Wildlife</span>
+</header>
+
+<div style="position:relative; flex:1; display:flex; flex-direction:column;">
+  <div id="map"></div>
+  <div id="loading">
+    <div class="spinner"></div>
+    <p id="loading-msg">Loading data…</p>
+  </div>
+</div>
+
+<script>
+// ─── Map Init ────────────────────────────────────────────────────────────────
+
+const map = L.map('map', {
+  center: [37.5, -119.5],
+  zoom: 6,
+  zoomControl: false,
+  preferCanvas: true,
+});
+
+L.control.zoom({ position: 'bottomright' }).addTo(map);
+
+L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_matter/{z}/{x}/{y}{r}.png', {
+  attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/">CARTO</a>',
+  maxZoom: 19,
+}).addTo(map);
+
+// ─── Hazard Config ───────────────────────────────────────────────────────────
+
+const HAZARD_CONFIG = {
+  'Very High': { color: '#dc2626', fill: '#ef4444' },
+  'High':      { color: '#d97706', fill: '#f59e0b' },
+  'Moderate':  { color: '#ca8a04', fill: '#eab308' },
+};
+
+function hazardStyle(feature) {
+  const cfg = HAZARD_CONFIG[feature.properties.HAZ_CLASS] || { color: '#475569', fill: '#64748b' };
+  return {
+    color:       cfg.color,
+    weight:      0.6,
+    opacity:     0.9,
+    fillColor:   cfg.fill,
+    fillOpacity: 0.45,
+  };
+}
+
+// ─── Lake Config ─────────────────────────────────────────────────────────────
+
+function lakeStyle() {
+  return {
+    color:       '#0ea5e9',
+    weight:      0.8,
+    opacity:     0.9,
+    fillColor:   '#38bdf8',
+    fillOpacity: 0.5,
+  };
+}
+
+// ─── Popups ──────────────────────────────────────────────────────────────────
+
+function formatAcres(a) {
+  if (!a && a !== 0) return '—';
+  return a >= 1000
+    ? (a / 1000).toFixed(1) + 'k acres'
+    : a.toFixed(1) + ' acres';
+}
+
+let hazardLayer;
+
+function onEachHazard(feature, layer) {
+  const p   = feature.properties;
+  const cfg = HAZARD_CONFIG[p.HAZ_CLASS] || { fill: '#64748b' };
+  layer.bindPopup(`
+    <div class="popup-title">
+      <span class="popup-dot" style="background:${cfg.fill}"></span>
+      ${p.HAZ_CLASS} Hazard Zone
+    </div>
+    <div class="popup-row"><span>Zones dissolved</span><span>${(p.zone_count || '—').toLocaleString()}</span></div>
+    <div class="popup-row"><span>Total area</span><span>${p.Shape_Area ? (p.Shape_Area / 1e6).toFixed(0) + ' km²' : '—'}</span></div>
+  `, { maxWidth: 240 });
+
+  layer.on({
+    mouseover(e) { e.target.setStyle({ fillOpacity: 0.7, weight: 1.5 }); e.target.bringToFront(); },
+    mouseout(e)  { hazardLayer.resetStyle(e.target); },
+  });
+}
+
+function onEachLake(feature, layer) {
+  const p = feature.properties;
+  layer.bindPopup(`
+    <div class="popup-title">
+      <span class="popup-dot" style="background:#38bdf8"></span>
+      ${p.NAME || 'Unnamed Lake'}
+    </div>
+    <div class="popup-row"><span>Type</span><span>${p.TYPE || '—'}</span></div>
+    <div class="popup-row"><span>County</span><span>${p.COUNTY || '—'}</span></div>
+    <div class="popup-row"><span>Surface area</span><span>${formatAcres(p.sfc_acres)}</span></div>
+    <div class="popup-row"><span>Elevation</span><span>${p.elev_ft ? p.elev_ft.toFixed(0) + ' ft' : '—'}</span></div>
+  `, { maxWidth: 240 });
+
+  layer.on({
+    mouseover(e) { e.target.setStyle({ fillOpacity: 0.8, weight: 1.5 }); e.target.bringToFront(); },
+    mouseout(e)  { e.target.setStyle(lakeStyle()); },
+  });
+}
+
+// ─── Legend ──────────────────────────────────────────────────────────────────
+
+const legend = L.control({ position: 'bottomleft' });
+legend.onAdd = function() {
+  const div = L.DomUtil.create('div', 'legend');
+  div.innerHTML = `
+    <h3>Fire Hazard Severity</h3>
+    ${['Very High','High','Moderate'].map(cls => {
+      const cfg = HAZARD_CONFIG[cls];
+      return `<div class="legend-item">
+        <span class="legend-swatch" style="background:${cfg.fill}; border:1px solid ${cfg.color}"></span>
+        ${cls}
+      </div>`;
+    }).join('')}
+    <hr class="legend-divider">
+    <h3>Water</h3>
+    <div class="legend-item">
+      <span class="legend-swatch" style="background:#38bdf8; border:1px solid #0ea5e9"></span>
+      Lakes (≥ 10 acres)
+    </div>
+    <hr class="legend-divider">
+    <div class="legend-item">
+      <span class="legend-swatch" style="background:transparent; border:2px dashed #38bdf8"></span>
+      California boundary
+    </div>
+  `;
+  return div;
+};
+legend.addTo(map);
+
+// ─── Load All Layers ─────────────────────────────────────────────────────────
+
+const setMsg = t => { document.getElementById('loading-msg').textContent = t; };
+
+Promise.all([
+  fetch('california.geojson').then(r => r.json()),
+  fetch('fhsz_sra.geojson').then(r => { setMsg('Loading fire hazard data…'); return r.json(); }),
+  fetch('lakes.geojson').then(r => { setMsg('Loading lakes data…'); return r.json(); }),
+])
+.then(([caData, fireData, lakeData]) => {
+  document.getElementById('loading').style.display = 'none';
+
+  // California border (bottom layer)
+  L.geoJSON(caData, {
+    style: {
+      color: '#38bdf8', weight: 2, opacity: 0.6,
+      fillColor: '#38bdf8', fillOpacity: 0.03,
+      dashArray: '6 4',
+    },
+    interactive: false,
+  }).addTo(map);
+
+  // Fire hazard zones
+  hazardLayer = L.geoJSON(fireData, {
+    style:         hazardStyle,
+    onEachFeature: onEachHazard,
+  }).addTo(map);
+
+  // Lakes on top
+  L.geoJSON(lakeData, {
+    style:         lakeStyle,
+    onEachFeature: onEachLake,
+  }).addTo(map);
+
+  map.fitBounds(hazardLayer.getBounds(), { padding: [20, 20] });
+})
+.catch(err => {
+  document.getElementById('loading').innerHTML = `
+    <div style="color:#ef4444;font-size:0.9rem;text-align:center;padding:20px">
+      <strong>Error loading data</strong><br>
+      <span style="color:#64748b;font-size:0.8rem">${err.message}</span><br><br>
+      <span style="color:#64748b;font-size:0.78rem">
+        Serve this directory with a local HTTP server, e.g.:<br>
+        <code style="color:#94a3b8">python -m http.server 8080</code>
+      </span>
+    </div>`;
+});
+</script>
+</body>
+</html>
