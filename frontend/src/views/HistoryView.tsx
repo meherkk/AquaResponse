@@ -38,6 +38,16 @@ function acresLabel(acres: number): string {
   return acres.toFixed(0)
 }
 
+/** Escape HTML entities to prevent XSS when interpolating into setHTML. */
+function esc(value: unknown): string {
+  return String(value)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;')
+}
+
 export default function HistoryView() {
   const mapContainerRef = useRef<HTMLDivElement>(null)
   const mapRef = useRef<maplibregl.Map | null>(null)
@@ -143,15 +153,15 @@ export default function HistoryView() {
           .setHTML(`
             <div style="font-family:monospace;font-size:11px;color:#e2e8f0;line-height:1.6;">
               <div style="font-size:13px;font-weight:700;color:#f97316;margin-bottom:6px;text-transform:uppercase;letter-spacing:0.05em;">
-                ${p.name}
+                ${esc(p.name)}
               </div>
               <div style="display:grid;grid-template-columns:1fr 1fr;gap:4px 12px;">
                 <span style="color:#94a3b8;">Date</span>
-                <span>${p.started}</span>
+                <span>${esc(p.started)}</span>
                 <span style="color:#94a3b8;">Acres</span>
                 <span>${Number(p.acres_burned).toLocaleString()}</span>
                 <span style="color:#94a3b8;">County</span>
-                <span>${p.counties}</span>
+                <span>${esc(p.counties)}</span>
                 <span style="color:#94a3b8;">Structures</span>
                 <span>${Number(p.structures_destroyed).toLocaleString()}</span>
               </div>
