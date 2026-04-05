@@ -22,17 +22,20 @@ def build_grid():
         ]],
     }
 
-    hex_set = h3.polyfill(bbox_polygon, H3_RESOLUTION, geo_json_conformant=True)
+    hex_set = h3.geo_to_cells(bbox_polygon, H3_RESOLUTION)
     print(f"Generated {len(hex_set)} H3 cells at resolution {H3_RESOLUTION}")
 
     features = []
     for h3_index in hex_set:
-        boundary = h3.h3_to_geo_boundary(h3_index, geo_json=True)
-        centroid = h3.h3_to_geo(h3_index)  # returns (lat, lon)
+        boundary = h3.cell_to_boundary(h3_index)  # returns [(lat, lon), ...]
+        lat, lon = h3.cell_to_latlng(h3_index)
 
-        ring = list(boundary)
+        # Convert to GeoJSON [lon, lat] order
+        ring = [[lng, lt] for lt, lng in boundary]
         if ring[0] != ring[-1]:
             ring.append(ring[0])
+
+        centroid = (lat, lon)
 
         feature = {
             "type": "Feature",
