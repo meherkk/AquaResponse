@@ -102,7 +102,8 @@ def load_water_sources() -> list[dict]:
                 centroid = row.geometry.centroid
                 lat, lon = centroid.y, centroid.x
                 if _in_bbox(lat, lon):
-                    name = row.get("NAME") or row.get("GNIS_Name") or f"Lake {idx}"
+                    raw_name = row.get("NAME") or row.get("GNIS_Name")
+                    name = str(raw_name) if raw_name and str(raw_name) != "nan" else f"Lake {idx}"
                     sources.append(
                         {
                             "id": f"lake_{idx}",

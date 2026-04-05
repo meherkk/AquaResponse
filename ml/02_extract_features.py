@@ -6,6 +6,7 @@ from math import radians
 import geopandas as gpd
 import numpy as np
 import pandas as pd
+import rasterio
 from scipy.spatial import cKDTree
 from shapely.geometry import Point
 
@@ -13,6 +14,25 @@ from config import ARTIFACTS_DIR, DATA_DIR, LA_OC_BBOX
 
 GRID_PATH = ARTIFACTS_DIR / "grid.geojson"
 OUT_PATH = ARTIFACTS_DIR / "features.parquet"
+
+DEM_PATH = DATA_DIR / "dem" / "la_oc_dem.tif"
+LC_PATH = DATA_DIR / "landcover" / "ESA_WorldCover_10m_2021_v200_N33W120_Map.tif"
+
+# ESA WorldCover class → fire-relevant encoded value
+# 20=Shrubland (chaparral), 30=Grassland, 10=Tree, 40=Crop, 50=Built-up, 60=Bare, 80=Water
+_LC_MAP = {
+    10: 3,   # Tree cover
+    20: 1,   # Shrubland / chaparral — primary wildfire fuel in CA
+    30: 2,   # Grassland — fast-burning fuel
+    40: 4,   # Cropland
+    50: 5,   # Built-up / urban
+    60: 6,   # Bare / sparse vegetation
+    70: 0,   # Snow/ice
+    80: 0,   # Permanent water
+    90: 2,   # Herbaceous wetland
+    95: 0,   # Mangroves
+    100: 0,  # Moss/lichen
+}
 
 # EPSG:3857 (Web Mercator) for meter-based distances
 CRS_METERS = "EPSG:3857"
@@ -194,6 +214,81 @@ def compute_incident_features(grid, incidents):
     )
 
 
+def compute_slope_aspect(grid):
+    """Sample slope (degrees) and aspect (sin/cos) at each cell centroid from SRTM DEM."""
+    if not DEM_PATH.exists():
+        print(f"WARNING: DEM not found at {DEM_PATH}. Run 00_download_rasters.py first.")
+        n = len(grid)
+        return (
+            pd.Series(np.zeros(n), index=grid["h3_index"].values),
+            pd.Series(np.zeros(n), index=grid["h3_index"].values),
+            pd.Series(np.ones(n), index=grid["h3_index"].values),
+        )
+
+    lons = grid["centroid_lon"].values
+    lats = grid["centroid_lat"].values
+
+    with rasterio.open(DEM_PATH) as src:
+        elev = src.read(1).astype(np.float64)
+        transform = src.transform
+
+        # Replace nodata with local median
+        nodata = src.nodata
+        if nodata is not None:
+            mask = elev == nodata
+            elev[mask] = np.nanmedian(elev[~mask]) if not np.all(mask) else 0.0
+        elev = np.where(np.isnan(elev), 0.0, elev)
+
+        # Cell size in meters at center latitude
+        center_lat_rad = radians((lats.min() + lats.max()) / 2)
+        dx_m = abs(transform.a) * 111320.0 * np.cos(center_lat_rad)
+        dy_m = abs(transform.e) * 111320.0
+
+        # Slope and aspect via numpy gradient
+        dz_dy_px, dz_dx_px = np.gradient(elev)
+        dz_dx = dz_dx_px / dx_m
+        dz_dy = dz_dy_px / dy_m
+        slope_arr = np.degrees(np.arctan(np.sqrt(dz_dx ** 2 + dz_dy ** 2)))
+        aspect_arr = np.degrees(np.arctan2(-dz_dy, dz_dx)) % 360.0
+
+        # Sample at centroids
+        rows, cols = zip(*[src.index(float(lo), float(la)) for lo, la in zip(lons, lats)])
+        rows = np.clip(rows, 0, elev.shape[0] - 1)
+        cols = np.clip(cols, 0, elev.shape[1] - 1)
+
+        cell_slope = slope_arr[rows, cols]
+        cell_aspect = aspect_arr[rows, cols]
+
+    aspect_rad = np.radians(cell_aspect)
+    return (
+        pd.Series(cell_slope.round(3), index=grid["h3_index"].values),
+        pd.Series(np.sin(aspect_rad).round(5), index=grid["h3_index"].values),
+        pd.Series(np.cos(aspect_rad).round(5), index=grid["h3_index"].values),
+    )
+
+
+def compute_land_cover(grid):
+    """Sample ESA WorldCover land cover class at each cell centroid."""
+    if not LC_PATH.exists():
+        print(f"WARNING: Land cover not found at {LC_PATH}. Run 00_download_rasters.py first.")
+        return pd.Series(np.zeros(len(grid), dtype=int), index=grid["h3_index"].values)
+
+    lons = grid["centroid_lon"].values
+    lats = grid["centroid_lat"].values
+
+    with rasterio.open(LC_PATH) as src:
+        lc_data = src.read(1)
+        height, width = lc_data.shape
+
+        rows, cols = zip(*[src.index(float(lo), float(la)) for lo, la in zip(lons, lats)])
+        rows = np.clip(rows, 0, height - 1)
+        cols = np.clip(cols, 0, width - 1)
+        raw = lc_data[rows, cols]
+
+    encoded = np.array([_LC_MAP.get(int(c), 0) for c in raw], dtype=np.int8)
+    return pd.Series(encoded, index=grid["h3_index"].values)
+
+
 def main():
     print("Loading grid...")
     grid = load_grid()
@@ -224,12 +319,22 @@ def main():
     print("Computing incident features...")
     fire_counts, total_acres = compute_incident_features(grid, incidents)
 
+    print("Computing slope and aspect from DEM...")
+    slope_series, aspect_sin_series, aspect_cos_series = compute_slope_aspect(grid)
+
+    print("Extracting land cover class...")
+    land_cover_series = compute_land_cover(grid)
+
     # Assemble feature DataFrame
     features = pd.DataFrame({
         "h3_index": grid["h3_index"].values,
         "centroid_lat": grid["centroid_lat"].values,
         "centroid_lon": grid["centroid_lon"].values,
         "haz_class_encoded": haz_series.reindex(grid["h3_index"].values).values,
+        "slope_deg": slope_series.reindex(grid["h3_index"].values).values,
+        "aspect_sin": aspect_sin_series.reindex(grid["h3_index"].values).values,
+        "aspect_cos": aspect_cos_series.reindex(grid["h3_index"].values).values,
+        "land_cover_class": land_cover_series.reindex(grid["h3_index"].values).values,
         "dist_to_nearest_hydrant_km": dist_hydrant.values,
         "hydrant_density_5km": density_hydrant.values,
         "dist_to_nearest_lake_km": dist_lake.values,

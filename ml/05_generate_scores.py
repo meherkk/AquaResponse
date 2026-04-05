@@ -16,6 +16,10 @@ OUT_PATH = ARTIFACTS_DIR / "risk_scores.geojson"
 
 FEATURE_COLS = [
     "haz_class_encoded",
+    "slope_deg",
+    "aspect_sin",
+    "aspect_cos",
+    "land_cover_class",
     "dist_to_nearest_hydrant_km",
     "hydrant_density_5km",
     "dist_to_nearest_lake_km",
