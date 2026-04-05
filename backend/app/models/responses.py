@@ -24,8 +24,6 @@ class Incident(BaseModel):
 class RouteRequest(BaseModel):
     lat: float = Field(..., ge=-90, le=90)
     lon: float = Field(..., ge=-180, le=180)
-    n: int = Field(default=3, ge=1, le=20)
-
     @field_validator("lat", "lon", mode="before")
     @classmethod
     def reject_nan_inf(cls, v: float) -> float:

@@ -27,7 +27,6 @@ def _haversine_km(lat1: float, lon1: float, lat2: float, lon2: float) -> float:
 @router.post("/route")
 def compute_route(req: RouteRequest):
     sources = startup.water_sources or []
-    n = req.n
 
     # Compute haversine distance for all sources
     scored = []
