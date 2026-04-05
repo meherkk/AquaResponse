@@ -2,7 +2,7 @@ import { useEffect, useRef, useCallback } from 'react'
 import maplibregl from 'maplibre-gl'
 import { Deck } from '@deck.gl/core'
 import { createH3HexLayer } from './H3HexLayer'
-import { addWaterMarkers } from './WaterMarkers'
+import { addWaterMarkers, updateHighlightedMarkers } from './WaterMarkers'
 import { addRouteLines } from './RouteLines'
 import type { ScenarioKey } from '../../constants/scenarios'
 import type { WaterSource, RouteResult } from '../../types/geo'
@@ -14,6 +14,7 @@ interface AquaMapProps {
   waterSources: WaterSource[]
   ignitionPoint: IgnitionPoint | null
   routes: RouteResult[]
+  highlightedIds: string[]
   onCellClick: (cell: GeoJSON.Feature | null) => void
   onMapClick: (lngLat: { lng: number; lat: number }) => void
 }
@@ -24,6 +25,7 @@ export default function AquaMap({
   waterSources,
   ignitionPoint,
   routes,
+  highlightedIds,
   onCellClick,
   onMapClick,
 }: AquaMapProps) {
@@ -123,6 +125,13 @@ export default function AquaMap({
     if (!map || !map.isStyleLoaded()) return
     addWaterMarkers(map, waterSources)
   }, [waterSources])
+
+  // Update highlight layers
+  useEffect(() => {
+    const map = mapRef.current
+    if (!map || !map.isStyleLoaded()) return
+    updateHighlightedMarkers(map, highlightedIds)
+  }, [highlightedIds])
 
   // Update route lines
   useEffect(() => {

@@ -67,6 +67,7 @@ export default function MapView() {
           waterSources={waterSources}
           ignitionPoint={ignitionPoint}
           routes={routes}
+          highlightedIds={routes.map(r => r.source.id)}
           onCellClick={handleCellClick}
           onMapClick={handleMapClick}
         />
@@ -77,7 +78,6 @@ export default function MapView() {
           {panelMode === 'water' && ignitionPoint && (
             <WaterSourcePanel
               ignitionPoint={ignitionPoint}
-              waterSources={waterSources}
               routes={routes}
             />
           )}
