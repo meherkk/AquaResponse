@@ -1,0 +1,13 @@
+{
+  "framework": "vite",
+  "rootDirectory": "frontend",
+  "outputDirectory": "dist",
+  "installCommand": "npm install",
+  "buildCommand": "npm run build",
+  "rewrites": [
+    { "source": "/((?!api/).*)", "destination": "/index.html" }
+  ],
+  "env": {
+    "VITE_API_BASE_URL": "https://aquaresponse-api.up.railway.app"
+  }
+}
