@@ -9,9 +9,9 @@ router = APIRouter(tags=["risk"])
 
 VALID_SCENARIOS = {
     "risk_normal",
-    "risk_extreme_heat",
-    "risk_santa_ana",
-    "risk_drought",
+    "risk_moderate_offshore",
+    "risk_strong_santa_ana",
+    "risk_extreme_santa_ana",
     "risk_post_rain",
 }
 
