@@ -18,6 +18,7 @@ class Settings(BaseSettings):
     lakes_path: str = str(_root / "data" / "lakes" / "California_Lakes.shp")
     incidents_path: str = str(_root / "data" / "California_Fire_Incidents.csv")
     port: int = 8000
+    cors_origins: str = "*"
 
     class Config:
         env_file = ".env"

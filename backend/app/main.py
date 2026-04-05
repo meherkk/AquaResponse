@@ -4,6 +4,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app import startup
+from app.config import settings
 from app.routers import incidents, risk, route as route_router, water
 
 
@@ -19,7 +20,7 @@ app = FastAPI(title="AquaResponse API", lifespan=lifespan)
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173", "http://localhost:3000"],
+    allow_origins=["*"] if settings.cors_origins == "*" else settings.cors_origins.split(","),
     allow_methods=["*"],
     allow_headers=["*"],
 )
