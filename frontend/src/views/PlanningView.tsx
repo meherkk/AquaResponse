@@ -288,11 +288,11 @@ function CorridorTable({ cells }: TableProps) {
 
 export default function PlanningView() {
   const [scenario, setScenario] = useScenario()
-  const data = useRiskCells()
+  const { cells: cellData, loading } = useRiskCells()
 
-  const cells = useMemo(() => (data ? extractCells(data) : []), [data])
+  const cells = useMemo(() => (cellData ? extractCells(cellData) : []), [cellData])
 
-  if (!data) {
+  if (loading) {
     return (
       <div className="flex flex-col h-screen bg-command-bg">
         <CommandBar scenario={scenario} onScenarioChange={setScenario} />
