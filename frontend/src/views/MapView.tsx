@@ -1,5 +1,6 @@
 import { useState, useCallback } from 'react'
 import AquaMap from '../components/map/AquaMap'
+import MapLegend from '../components/map/MapLegend'
 import CommandBar from '../components/layout/CommandBar'
 import SlidePanel from '../components/layout/SlidePanel'
 import CellDetailPanel from '../components/map/CellDetailPanel'
@@ -61,6 +62,7 @@ export default function MapView() {
             Loading risk data...
           </div>
         )}
+        <MapLegend />
         <AquaMap
           cells={cells}
           scenario={scenario}
