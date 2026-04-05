@@ -19,6 +19,7 @@ export default function MapView() {
   const [panelMode, setPanelMode] = useState<PanelMode>(null)
   const [selectedCell, setSelectedCell] = useState<GeoJSON.Feature | null>(null)
   const [routes, setRoutes] = useState<RouteResult[]>([])
+  const [routeLoading, setRouteLoading] = useState(false)
 
   const { cells, loading: cellsLoading, error: cellsError } = useRiskCells()
   const { waterSources, loading: wsLoading, error: wsError } = useWaterSources()
@@ -37,9 +38,10 @@ export default function MapView() {
     setIgnitionPoint({ lat: lngLat.lat, lon: lngLat.lng })
     setPanelMode('water')
     setRoutes([])
+    setRouteLoading(true)
     fetchRoute(lngLat.lat, lngLat.lng)
-      .then(setRoutes)
-      .catch(() => setRoutes([]))
+      .then((r) => { setRoutes(r); setRouteLoading(false) })
+      .catch(() => { setRoutes([]); setRouteLoading(false) })
   }, [setIgnitionPoint])
 
   const handleClosePanel = useCallback(() => {
@@ -79,6 +81,7 @@ export default function MapView() {
               ignitionPoint={ignitionPoint}
               waterSources={waterSources}
               routes={routes}
+              loading={routeLoading}
             />
           )}
         </SlidePanel>

@@ -40,7 +40,7 @@ export function addRouteLines(map: maplibregl.Map, routes: RouteResult[]) {
     },
   })
 
-  // Marching ants animation
+  // Marching ants animation — interval stored on map instance for cleanup
   let offset = 0
   const interval = setInterval(() => {
     if (!map.getLayer(ROUTE_LAYER)) {
@@ -48,15 +48,22 @@ export function addRouteLines(map: maplibregl.Map, routes: RouteResult[]) {
       return
     }
     offset = (offset + 1) % 6
-    map.setPaintProperty(ROUTE_LAYER, 'line-dasharray', [4, 2])
-    // MapLibre doesn't support dash offset directly, shift the pattern
-    map.setPaintProperty(ROUTE_LAYER, 'line-dasharray',
-      offset < 3 ? [4, 2] : [2, 4]
+    map.setPaintProperty(
+      ROUTE_LAYER,
+      'line-dasharray',
+      offset < 3 ? [4, 2] : [2, 4],
     )
   }, 300)
+  // Expose interval id so callers can clear it on cleanup
+  ;(map as maplibregl.Map & { _routeInterval?: ReturnType<typeof setInterval> })._routeInterval = interval
 }
 
 export function clearRouteLines(map: maplibregl.Map) {
+  const m = map as maplibregl.Map & { _routeInterval?: ReturnType<typeof setInterval> }
+  if (m._routeInterval !== undefined) {
+    clearInterval(m._routeInterval)
+    m._routeInterval = undefined
+  }
   if (map.getLayer(ROUTE_LAYER)) map.removeLayer(ROUTE_LAYER)
   if (map.getSource(ROUTE_SOURCE)) map.removeSource(ROUTE_SOURCE)
 }

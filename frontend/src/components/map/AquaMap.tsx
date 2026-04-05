@@ -3,7 +3,7 @@ import maplibregl from 'maplibre-gl'
 import { Deck } from '@deck.gl/core'
 import { createH3HexLayer } from './H3HexLayer'
 import { addWaterMarkers } from './WaterMarkers'
-import { addRouteLines } from './RouteLines'
+import { addRouteLines, clearRouteLines } from './RouteLines'
 import type { ScenarioKey } from '../../constants/scenarios'
 import type { WaterSource, RouteResult } from '../../types/geo'
 import type { IgnitionPoint } from '../../hooks/useIgnitionPoint'
@@ -105,6 +105,7 @@ export default function AquaMap({
     })
 
     return () => {
+      clearRouteLines(map)
       deckRef.current?.finalize()
       map.remove()
     }

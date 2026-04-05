@@ -38,8 +38,17 @@ export default function WaterSourcePanel({
         </div>
 
         {loading ? (
-          <div className="text-xs text-command-muted animate-pulse py-4 text-center font-mono">
-            Routing...
+          <div className="space-y-2">
+            {[0, 1, 2].map((i) => (
+              <div key={i} className="flex items-center gap-3 p-2.5 border border-command-border bg-command-bg animate-pulse">
+                <div className="w-7 h-7 bg-command-border rounded-sm" />
+                <div className="flex-1 space-y-1.5">
+                  <div className="h-2.5 bg-command-border rounded w-3/4" />
+                  <div className="h-2 bg-command-border/60 rounded w-1/3" />
+                </div>
+                <div className="h-4 w-12 bg-command-border rounded" />
+              </div>
+            ))}
           </div>
         ) : nearest.length === 0 ? (
           <div className="text-xs text-command-muted py-4 text-center">
