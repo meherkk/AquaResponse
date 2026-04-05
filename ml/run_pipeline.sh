@@ -1,6 +1,8 @@
 #!/bin/bash
 set -e
 cd "$(dirname "$0")"
+echo "=== Step 0: Download rasters (DEM + land cover) ==="
+python 00_download_rasters.py
 echo "=== Step 1: Build H3 grid ==="
 python 01_build_h3_grid.py
 echo "=== Step 2: Extract features ==="
