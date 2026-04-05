@@ -1,3 +1,4 @@
+import asyncio
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
@@ -10,10 +11,13 @@ from app.routers import incidents, risk, route as route_router, water
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    startup.risk_data = startup.load_risk_data()
-    startup.water_sources = startup.load_water_sources()
-    startup.incidents_data = startup.load_incidents()
-    startup.road_graph = startup.load_road_graph()
+    # Run blocking file I/O in a thread so the event loop stays free (Python 3.14+)
+    startup.risk_data = await asyncio.to_thread(startup.load_risk_data)
+    startup.water_sources = await asyncio.to_thread(startup.load_water_sources)
+    startup.incidents_data = await asyncio.to_thread(startup.load_incidents)
+    # Road graph (osmnx download) is skipped at startup — routing falls back to
+    # straight-line distances which is fast and sufficient for the app.
+    startup.road_graph = None
     yield
 
 
