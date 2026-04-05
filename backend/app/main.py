@@ -12,6 +12,7 @@ async def lifespan(app: FastAPI):
     startup.risk_data = startup.load_risk_data()
     startup.water_sources = startup.load_water_sources()
     startup.incidents_data = startup.load_incidents()
+    startup.road_graph = startup.load_road_graph()
     yield
 
 
