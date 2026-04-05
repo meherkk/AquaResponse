@@ -47,25 +47,20 @@ export default function MapView() {
     setSelectedCell(null)
   }, [])
 
-  if (loading) {
-    return (
-      <div className="flex flex-col h-screen bg-command-bg items-center justify-center">
-        <span className="text-slate-300 text-sm tracking-widest uppercase">
-          Loading sensor data...
-        </span>
-      </div>
-    )
-  }
-
   return (
     <div className="flex flex-col h-screen bg-command-bg">
       {error && (
         <div className="bg-red-900/80 text-red-200 text-xs px-4 py-2 text-center">
-          {error}
+          {error} — check backend connection
         </div>
       )}
       <CommandBar scenario={scenario} onScenarioChange={setScenario} />
       <div className="relative flex-1">
+        {loading && (
+          <div className="absolute top-3 left-1/2 -translate-x-1/2 z-10 bg-command-surface/90 border border-slate-700 px-3 py-1 text-xs text-slate-400 tracking-widest uppercase pointer-events-none">
+            Loading risk data...
+          </div>
+        )}
         <AquaMap
           cells={cells}
           scenario={scenario}
