@@ -1,4 +1,6 @@
-from pydantic import BaseModel
+import math
+
+from pydantic import BaseModel, Field, field_validator
 
 
 class WaterSource(BaseModel):
@@ -20,9 +22,18 @@ class Incident(BaseModel):
 
 
 class RouteRequest(BaseModel):
-    lat: float
-    lon: float
-    n: int = 3
+    lat: float = Field(..., ge=-90, le=90)
+    lon: float = Field(..., ge=-180, le=180)
+    n: int = Field(default=3, ge=1, le=20)
+
+    @field_validator("lat", "lon", mode="before")
+    @classmethod
+    def reject_nan_inf(cls, v: float) -> float:
+        if not isinstance(v, (int, float)):
+            raise ValueError("must be a number")
+        if math.isnan(v) or math.isinf(v):
+            raise ValueError("NaN and Inf are not allowed")
+        return v
 
 
 class RouteResponse(BaseModel):

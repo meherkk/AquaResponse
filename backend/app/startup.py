@@ -1,14 +1,18 @@
 import csv
 import json
+import logging
 import math
 from pathlib import Path
 
 from app.config import settings
 
+logger = logging.getLogger(__name__)
+
 # Module-level globals — populated during app lifespan startup
 risk_data: dict | None = None
 water_sources: list[dict] | None = None
 incidents_data: list[dict] | None = None
+road_graph = None
 
 # LA/OC bounding box
 _BBOX_LON_MIN, _BBOX_LON_MAX = -119.0, -117.4
@@ -147,3 +151,18 @@ def load_incidents() -> list[dict]:
                 }
             )
     return results
+
+
+def load_road_graph():
+    try:
+        import osmnx as ox
+
+        graph = ox.graph_from_bbox(
+            bbox=(34.9, 33.3, -117.4, -119.0),
+            network_type="drive",
+        )
+        logger.info("Road graph loaded: %d nodes, %d edges", graph.number_of_nodes(), graph.number_of_edges())
+        return graph
+    except Exception as exc:
+        logger.warning("Failed to load road graph, routing will fall back to straight-line: %s", exc)
+        return None

@@ -1,18 +1,38 @@
 import { useState, useEffect } from 'react'
-import { MOCK_RISK_CELLS } from '../mocks/risk_cells_mock'
+import { API_BASE } from '../constants/api'
 
-/**
- * Returns the full risk-cell dataset as a GeoJSON FeatureCollection.
- * Currently backed by mock data; will be wired to GET /risk-cells later.
- */
-export function useRiskCells(): GeoJSON.FeatureCollection | null {
-  const [data, setData] = useState<GeoJSON.FeatureCollection | null>(null)
+interface UseRiskCellsResult {
+  cells: GeoJSON.FeatureCollection | null
+  loading: boolean
+  error: string | null
+}
+
+export function useRiskCells(): UseRiskCellsResult {
+  const [cells, setCells] = useState<GeoJSON.FeatureCollection | null>(null)
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
-    // Simulate async load so consumers handle the null/loading state
-    const id = setTimeout(() => setData(MOCK_RISK_CELLS), 80)
-    return () => clearTimeout(id)
+    const controller = new AbortController()
+
+    fetch(`${API_BASE}/risk-cells`, { signal: controller.signal })
+      .then((res) => {
+        if (!res.ok) throw new Error(`Risk cells request failed (${res.status})`)
+        return res.json() as Promise<GeoJSON.FeatureCollection>
+      })
+      .then((data) => {
+        setCells(data)
+        setLoading(false)
+      })
+      .catch((err: unknown) => {
+        if (err instanceof DOMException && err.name === 'AbortError') return
+        const message = err instanceof Error ? err.message : 'Unknown error loading risk cells'
+        setError(message)
+        setLoading(false)
+      })
+
+    return () => controller.abort()
   }, [])
 
-  return data
+  return { cells, loading, error }
 }
