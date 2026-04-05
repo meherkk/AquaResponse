@@ -42,7 +42,10 @@ def compute_route(req: RouteRequest):
     # --- Fallback: no road graph ---
     if graph is None:
         routes = []
-        for dist_km, ws in scored[:n]:
+        hydrants = [(d, ws) for d, ws in scored if ws["type"] == "hydrant"][:2]
+        lakes = [(d, ws) for d, ws in scored if ws["type"] == "lake"][:1]
+        selected = sorted(hydrants + lakes, key=lambda x: x[0])
+        for dist_km, ws in selected:
             routes.append({
                 "id": ws["id"],
                 "type": ws["type"],
@@ -77,7 +80,9 @@ def compute_route(req: RouteRequest):
             routed.append((length_m, ws, dest_node))
 
         routed.sort(key=lambda x: x[0])
-        top = routed[:n]
+        hydrants = [r for r in routed if r[1]["type"] == "hydrant"][:2]
+        lakes = [r for r in routed if r[1]["type"] == "lake"][:1]
+        top = sorted(hydrants + lakes, key=lambda x: x[0])
 
         routes = []
         for length_m, ws, dest_node in top:
@@ -95,7 +100,7 @@ def compute_route(req: RouteRequest):
 
         return RouteResponse(
             routes=routes,
-            message=f"Top {len(routes)} water sources by road distance",
+            message=f"Top {len(routes)} water sources (2 hydrants + 1 lake) by road distance",
         )
     except Exception:
         logger.exception("Road-network routing failed")

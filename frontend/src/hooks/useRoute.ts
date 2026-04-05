@@ -20,7 +20,7 @@ export async function fetchRoute(lat: number, lon: number): Promise<RouteResult[
   const res = await fetch(`${API_BASE}/route`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ lat, lon, n: 3 }),
+    body: JSON.stringify({ lat, lon }),
   })
 
   if (!res.ok) throw new Error(`Route request failed (${res.status})`)
